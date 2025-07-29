@@ -1,6 +1,6 @@
 // API Configuration
-const API_KEY = 'd1e954118b44ce9b51164bd3d52b8b8f'; // Replace with your actual API key
-const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+// No API key in frontend. Use backend proxy endpoints instead.
+const BASE_URL = 'http://localhost:3001/api';
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 
 // DOM Elements
@@ -81,16 +81,13 @@ async function fetchWeather(city) {
     hideError();
     
     try {
-        const response = await fetch(`${BASE_URL}/weather?q=${city}&units=metric&appid=${API_KEY}`);
-        
+        const response = await fetch(`${BASE_URL}/weather?city=${encodeURIComponent(city)}`);
         if (!response.ok) {
             throw new Error('City not found');
         }
-        
         const data = await response.json();
         currentWeatherData = data;
         updateUI(data);
-        
         // Fetch forecast with coordinates
         fetchForecast(data.coord.lat, data.coord.lon);
     } catch (err) {
@@ -107,16 +104,13 @@ async function fetchWeatherByCoords(lat, lon) {
     hideError();
     
     try {
-        const response = await fetch(`${BASE_URL}/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`);
-        
+        const response = await fetch(`${BASE_URL}/weather?lat=${lat}&lon=${lon}`);
         if (!response.ok) {
             throw new Error('Location not found');
         }
-        
         const data = await response.json();
         currentWeatherData = data;
         updateUI(data);
-        
         // Fetch forecast with coordinates
         fetchForecast(lat, lon);
     } catch (err) {
@@ -130,24 +124,18 @@ async function fetchWeatherByCoords(lat, lon) {
 // Fetch 5-day forecast using both OpenWeatherMap and Open-Meteo
 async function fetchForecast(lat, lon) {
     try {
-        // First get the basic forecast from OpenWeatherMap
-        const owmResponse = await fetch(`${BASE_URL}/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`);
-        
+        // First get the basic forecast from backend
+        const owmResponse = await fetch(`${BASE_URL}/forecast?lat=${lat}&lon=${lon}`);
         if (!owmResponse.ok) {
             throw new Error('Forecast not available');
         }
-        
         const owmData = await owmResponse.json();
-        
-        // Then get more detailed forecast from Open-Meteo
+        // Then get more detailed forecast from Open-Meteo (still public)
         const meteoResponse = await fetch(`${OPEN_METEO_URL}?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`);
-        
         if (!meteoResponse.ok) {
             throw new Error('Detailed forecast not available');
         }
-        
         const meteoData = await meteoResponse.json();
-        
         // Combine data from both APIs
         updateForecast(owmData, meteoData);
     } catch (err) {
